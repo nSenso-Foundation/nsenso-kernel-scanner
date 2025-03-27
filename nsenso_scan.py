@@ -4,11 +4,15 @@ import sys
 import subprocess
 import json
 import argparse
+import time
 from datetime import datetime
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
-from rich.progress import Progress
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
+from rich.live import Live
+from rich.layout import Layout
+from rich.text import Text
 from typing import Dict, List, Optional
 
 class NSensoScanner:
@@ -19,6 +23,17 @@ class NSensoScanner:
             "warning": [],
             "info": []
         }
+        
+        # ASCII Art Logo
+        self.logo = """
+███╗   ██╗███████╗███╗   ██╗███████╗ ██████╗ 
+████╗  ██║██╔════╝████╗  ██║██╔════╝██╔═══██╗
+██╔██╗ ██║███████╗██╔██╗ ██║█████╗  ██║   ██║
+██║╚██╗██║╚════██║██║╚██╗██║██╔══╝  ██║   ██║
+██║ ╚████║███████║██║ ╚████║███████╗╚██████╔╝
+╚═╝  ╚═══╝╚══════╝╚═╝  ╚═══╝╚══════╝ ╚═════╝ 
+        Linux Security Scanner
+        """
         
     def run_command(self, command: str) -> str:
         """Execute a shell command and return its output."""
@@ -162,23 +177,51 @@ def main():
 
     scanner = NSensoScanner()
     
-    with Progress() as progress:
-        task = progress.add_task("[cyan]Running security checks...", total=5)
+    # Display logo
+    scanner.console.print(Panel(
+        Text(scanner.logo, style="bold cyan"),
+        border_style="cyan"
+    ))
+    
+    # Create progress display with enhanced styling
+    progress = Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+        TimeElapsedColumn(),
+        console=scanner.console
+    )
+    
+    with progress:
+        # Create tasks for each check
+        tasks = {
+            "sudo": progress.add_task("[cyan]Checking sudo configurations...", total=100),
+            "files": progress.add_task("[cyan]Checking file permissions...", total=100),
+            "users": progress.add_task("[cyan]Checking user security...", total=100),
+            "processes": progress.add_task("[cyan]Checking process security...", total=100),
+            "kernel": progress.add_task("[cyan]Checking kernel hardening...", total=100)
+        }
         
-        scanner.check_sudo_misconfigurations()
-        progress.update(task, advance=1)
-        
-        scanner.check_file_permissions()
-        progress.update(task, advance=1)
-        
-        scanner.check_user_security()
-        progress.update(task, advance=1)
-        
-        scanner.check_process_security()
-        progress.update(task, advance=1)
-        
-        scanner.check_kernel_hardening()
-        progress.update(task, advance=1)
+        # Run checks with progress updates
+        for i in range(100):
+            if i < 20:
+                scanner.check_sudo_misconfigurations()
+                progress.update(tasks["sudo"], completed=i+1)
+            elif i < 40:
+                scanner.check_file_permissions()
+                progress.update(tasks["files"], completed=i-19)
+            elif i < 60:
+                scanner.check_user_security()
+                progress.update(tasks["users"], completed=i-39)
+            elif i < 80:
+                scanner.check_process_security()
+                progress.update(tasks["processes"], completed=i-59)
+            else:
+                scanner.check_kernel_hardening()
+                progress.update(tasks["kernel"], completed=i-79)
+            
+            time.sleep(0.05)  # Add small delay for smooth animation
 
     scanner.generate_report(args.format)
 
