@@ -134,9 +134,16 @@ class NSensoScanner:
         self.console.print("\n[bold green]=== nSenso Security Scan Report ===[/bold green]")
         self.console.print(f"Scan completed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
 
+        # Define severity colors
+        severity_colors = {
+            "critical": "red",
+            "warning": "yellow",
+            "info": "blue"
+        }
+
         for severity, findings in self.findings.items():
             if findings:
-                self.console.print(f"\n[bold {severity}]{severity.upper()} FINDINGS:[/bold {severity}]")
+                self.console.print(f"\n[bold {severity_colors[severity]}]{severity.upper()} FINDINGS:[/bold {severity_colors[severity]}]")
                 for finding in findings:
                     self.console.print(Panel(
                         f"[bold]Type:[/bold] {finding['type']}\n"
@@ -144,7 +151,7 @@ class NSensoScanner:
                         f"[bold]Command:[/bold] {finding['command']}\n"
                         f"[bold]Remediation:[/bold] {finding['remediation']}",
                         title=f"{severity.upper()} Issue",
-                        border_style=severity
+                        border_style=severity_colors[severity]
                     ))
 
 def main():
